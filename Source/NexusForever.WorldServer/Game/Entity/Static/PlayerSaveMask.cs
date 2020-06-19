@@ -12,6 +12,8 @@ namespace NexusForever.WorldServer.Game.Entity.Static
         Location    = 0x0001,
         Path        = 0x0002,
         Costume     = 0x0004,
-        InputKeySet = 0x0008
+        InputKeySet = 0x0008,
+        Xp          = 0x0010,
+        Innate      = 0x0080
     }
 }

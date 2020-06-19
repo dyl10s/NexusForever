@@ -9,10 +9,11 @@ A server emulator for WildStar written in C# that supports build 16042.
 [Server Setup Guide](https://github.com/Rawaho/NexusForever/wiki/Installation)
 
 ### Requirements
- * Visual Studio 2019 (.NET Core 2.2 and C# 7.3 support required)
+ * Visual Studio 2019 (.NET Core 3.1 and C# 8 support required)
  * MySQL Server (or equivalent, eg: MariaDB)
  * WildStar 16042 client
 
 ### Links
  * [Website](https://emulator.ws)
  * [Discord](https://discord.gg/8wT3GEQ)
+ * [World Database](https://github.com/NexusForever/NexusForever.WorldDatabase)

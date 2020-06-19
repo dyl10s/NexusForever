@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.Shared.Network;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
-using NexusForever.WorldServer.Database;
-using NexusForever.WorldServer.Database.Character.Model;
 using NexusForever.WorldServer.Game.Entity;
 using NexusForever.WorldServer.Network.Message.Model;
 
@@ -41,7 +41,7 @@ namespace NexusForever.WorldServer.Game.Map
             height       = (ushort)(mapZone.HexLimY - mapZone.HexMinY + 1);
             ushort wh    = (ushort)(width * height);
             size         = (ushort)((wh % 8u > 0u ? 8u : 0u) + wh);
-            maxHexGroups = (ushort)GameTableManager.MapZoneHexGroup.Entries.Count(m => m.MapZoneId == entry.Id);
+            maxHexGroups = (ushort)GameTableManager.Instance.MapZoneHexGroup.Entries.Count(m => m.MapZoneId == entry.Id);
             zoneMapBits  = new NetworkBitArray(size, NetworkBitArray.BitOrder.LeastSignificantBit);
         }
 
@@ -49,7 +49,7 @@ namespace NexusForever.WorldServer.Game.Map
         {
             foreach ((ushort hexGroupId, bool _) in zoneMapHexGroups.Where(z => z.Value).ToList())
             {
-                var model = new CharacterZonemapHexgroup
+                var model = new CharacterZonemapHexgroupModel
                 {
                     Id       = player.CharacterId,
                     ZoneMap  = (ushort)entry.Id,
@@ -79,7 +79,7 @@ namespace NexusForever.WorldServer.Game.Map
         /// </summary>
         public void AddHexGroup(ushort hexGroupId, bool sendUpdate = true)
         {
-            foreach (MapZoneHexGroupEntryEntry mapZoneHexGroupEntry in GameTableManager.MapZoneHexGroupEntry.Entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
+            foreach (MapZoneHexGroupEntryEntry mapZoneHexGroupEntry in GameTableManager.Instance.MapZoneHexGroupEntry.Entries.Where(m => m.MapZoneHexGroupId == hexGroupId))
             {
                 var bit = (ushort)
                     (((short)mapZoneHexGroupEntry.HexY - (short)entry.HexMinY) * (short)width +

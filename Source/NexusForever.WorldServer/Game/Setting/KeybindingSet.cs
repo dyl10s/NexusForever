@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using NexusForever.Shared.Database;
-using NexusForever.Shared.Database.Auth.Model;
-using NexusForever.WorldServer.Database;
-using NexusForever.WorldServer.Database.Character.Model;
+using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.WorldServer.Game.Setting.Static;
 using NexusForever.WorldServer.Network.Message.Model;
 using NetworkBinding = NexusForever.WorldServer.Network.Message.Model.Shared.Binding;
@@ -24,24 +24,24 @@ namespace NexusForever.WorldServer.Game.Setting
         /// <summary>
         /// Create a new <see cref="KeybindingSet"/> from an existing database model.
         /// </summary>
-        public KeybindingSet(Character model)
+        public KeybindingSet(CharacterModel model)
         {
             Owner    = model.Id;
             InputSet = InputSets.Character;
 
-            foreach (CharacterKeybinding binding in model.CharacterKeybinding)
+            foreach (CharacterKeybindingModel binding in model.Keybinding)
                 bindings.Add(binding.InputActionId, new Keybinding(Owner, binding));
         }
 
         /// <summary>
         /// Create a new <see cref="KeybindingSet"/> from an existing database model.
         /// </summary>
-        public KeybindingSet(Account model)
+        public KeybindingSet(AccountModel model)
         {
             Owner    = model.Id;
             InputSet = InputSets.Account;
 
-            foreach (AccountKeybinding binding in model.AccountKeybinding)
+            foreach (AccountKeybindingModel binding in model.AccountKeybinding)
                 bindings.Add(binding.InputActionId, new Keybinding(Owner, binding));
         }
 

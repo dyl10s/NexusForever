@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using NexusForever.Database.World.Model;
 using NexusForever.Shared.Network.Message;
-using NexusForever.WorldServer.Database.World.Model;
 using NexusForever.WorldServer.Game.Entity.Movement;
 using NexusForever.WorldServer.Game.Entity.Network;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Game.Map;
 using NexusForever.WorldServer.Network.Message.Model;
 using NexusForever.WorldServer.Network.Message.Model.Shared;
-using EntityModel = NexusForever.WorldServer.Database.World.Model.Entity;
 
 namespace NexusForever.WorldServer.Game.Entity
 {
@@ -21,12 +20,29 @@ namespace NexusForever.WorldServer.Game.Entity
         public Vector3 Rotation { get; set; } = Vector3.Zero;
         public Dictionary<Property, PropertyValue> Properties { get; } = new Dictionary<Property, PropertyValue>();
 
+        public uint EntityId { get; protected set; }
+        public uint CreatureId { get; protected set; }
         public uint DisplayInfo { get; protected set; }
         public ushort OutfitInfo { get; protected set; }
         public Faction Faction1 { get; set; }
         public Faction Faction2 { get; set; }
 
+        public ulong ActivePropId { get; private set; }
+        public ushort WorldSocketId { get; private set; }
+
+        public Vector3 LeashPosition { get; protected set; }
+        public float LeashRange { get; protected set; } = 15f;
         public MovementManager MovementManager { get; private set; }
+
+        public uint Health
+        {
+            get => GetStatInteger(Stat.Health) ?? 0u;
+        }
+
+        public float Shield
+        {
+            get => GetStatInteger(Stat.Shield) ?? 0u;
+        }
 
         public uint Level
         {
@@ -67,18 +83,23 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public virtual void Initialise(EntityModel model)
         {
-            Rotation    = new Vector3(model.Rx, model.Ry, model.Rz);
-            DisplayInfo = model.DisplayInfo;
-            OutfitInfo  = model.OutfitInfo;
-            Faction1    = (Faction)model.Faction1;
-            Faction2    = (Faction)model.Faction2;
+            EntityId     = model.Id;
+            CreatureId   = model.Creature;
+            Rotation     = new Vector3(model.Rx, model.Ry, model.Rz);
+            DisplayInfo  = model.DisplayInfo;
+            OutfitInfo   = model.OutfitInfo;
+            Faction1     = (Faction)model.Faction1;
+            Faction2     = (Faction)model.Faction2;
+            ActivePropId = model.ActivePropId;
+            WorldSocketId = model.WorldSocketId;
 
-            foreach (EntityStat statModel in model.EntityStat)
+            foreach (EntityStatModel statModel in model.EntityStat)
                 stats.Add((Stat)statModel.Stat, new StatValue(statModel));
         }
 
         public override void OnAddToMap(BaseMap map, uint guid, Vector3 vector)
         {
+            LeashPosition   = vector;
             MovementManager = new MovementManager(this, vector, Rotation);
             base.OnAddToMap(map, guid, vector);
         }
@@ -101,7 +122,7 @@ namespace NexusForever.WorldServer.Game.Entity
 
         public virtual ServerEntityCreate BuildCreatePacket()
         {
-            return new ServerEntityCreate
+            ServerEntityCreate entityCreatePacket =  new ServerEntityCreate
             {
                 Guid         = Guid,
                 Type         = Type,
@@ -116,6 +137,23 @@ namespace NexusForever.WorldServer.Game.Entity
                 DisplayInfo  = DisplayInfo,
                 OutfitInfo   = OutfitInfo
             };
+
+            // Plugs should not have this portion of the packet set by this Class. The Plug Class should set it itself.
+            // This is in large part due to the way Plugs are tied either to a DecorId OR Guid. Other entities do not have the same issue.
+            if (!(this is Plug))
+            {
+                if (ActivePropId > 0 || WorldSocketId > 0)
+                {
+                    entityCreatePacket.WorldPlacementData = new ServerEntityCreate.WorldPlacement
+                    {
+                        Type = 1,
+                        ActivePropId = ActivePropId,
+                        SocketId = WorldSocketId
+                    };
+                }
+            }
+
+            return entityCreatePacket;
         }
 
         // TODO: research the difference between a standard activation and cast activation
@@ -154,7 +192,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         protected float? GetStatFloat(Stat stat)
         {
-            StatAttribute attribute = EntityManager.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
             if (attribute?.Type != StatType.Float)
                 throw new ArgumentException();
 
@@ -169,7 +207,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         protected uint? GetStatInteger(Stat stat)
         {
-            StatAttribute attribute = EntityManager.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
             if (attribute?.Type != StatType.Integer)
                 throw new ArgumentException();
 
@@ -180,11 +218,23 @@ namespace NexusForever.WorldServer.Game.Entity
         }
 
         /// <summary>
+        /// Return the <see cref="uint"/> value of the supplied <see cref="Stat"/> as an <see cref="Enum"/>.
+        /// </summary>
+        public T? GetStatEnum<T>(Stat stat) where T : struct, Enum
+        {
+            uint? value = GetStatInteger(stat);
+            if (value == null)
+                return null;
+
+            return (T)Enum.ToObject(typeof(T), value.Value);
+        }
+
+        /// <summary>
         /// Set <see cref="Stat"/> to the supplied <see cref="float"/> value.
         /// </summary>
         protected void SetStat(Stat stat, float value)
         {
-            StatAttribute attribute = EntityManager.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
             if (attribute?.Type != StatType.Float)
                 throw new ArgumentException();
 
@@ -211,7 +261,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         protected void SetStat(Stat stat, uint value)
         {
-            StatAttribute attribute = EntityManager.GetStatAttribute(stat);
+            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
             if (attribute?.Type != StatType.Integer)
                 throw new ArgumentException();
 
@@ -231,6 +281,14 @@ namespace NexusForever.WorldServer.Game.Entity
                     Stat   = statValue
                 }, true);
             }
+        }
+
+        /// <summary>
+        /// Set <see cref="Stat"/> to the supplied <see cref="Enum"/> value.
+        /// </summary>
+        protected void SetStat<T>(Stat stat, T value) where T : Enum, IConvertible
+        {
+            SetStat(stat, value.ToUInt32(null));
         }
 
         /// <summary>
@@ -282,6 +340,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public void EnqueueToVisible(IWritable message, bool includeSelf = false)
         {
+            // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (WorldEntity entity in visibleEntities.Values)
             {
                 if (!(entity is Player player))

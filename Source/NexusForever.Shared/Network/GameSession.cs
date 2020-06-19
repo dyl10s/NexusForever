@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -23,14 +22,14 @@ namespace NexusForever.Shared.Network
 
         private FragmentedBuffer onDeck;
         private readonly ConcurrentQueue<ClientGamePacket> incomingPackets = new ConcurrentQueue<ClientGamePacket>();
-        private readonly Queue<ServerGamePacket> outgoingPackets = new Queue<ServerGamePacket>();
+        private readonly ConcurrentQueue<ServerGamePacket> outgoingPackets = new ConcurrentQueue<ServerGamePacket>();
 
         /// <summary>
         /// Enqueue <see cref="IWritable"/> to be sent to the client.
         /// </summary>
         public void EnqueueMessage(IWritable message)
         {
-            if (!MessageManager.GetOpcode(message, out GameMessageOpcode opcode))
+            if (!MessageManager.Instance.GetOpcode(message, out GameMessageOpcode opcode))
             {
                 log.Warn("Failed to send message with no attribute!");
                 return;
@@ -49,7 +48,7 @@ namespace NexusForever.Shared.Network
         /// </summary>
         public void EnqueueMessageEncrypted(IWritable message)
         {
-            if (!MessageManager.GetOpcode(message, out GameMessageOpcode opcode))
+            if (!MessageManager.Instance.GetOpcode(message, out GameMessageOpcode opcode))
             {
                 log.Warn("Failed to send message with no attribute!");
                 return;
@@ -151,14 +150,14 @@ namespace NexusForever.Shared.Network
 
         protected void HandlePacket(ClientGamePacket packet)
         {
-            IReadable message = MessageManager.GetMessage(packet.Opcode);
+            IReadable message = MessageManager.Instance.GetMessage(packet.Opcode);
             if (message == null)
             {
                 log.Warn($"Received unknown packet {packet.Opcode:X}");
                 return;
             }
 
-            MessageHandlerDelegate handlerInfo = MessageManager.GetMessageHandler(packet.Opcode);
+            MessageHandlerDelegate handlerInfo = MessageManager.Instance.GetMessageHandler(packet.Opcode);
             if (handlerInfo == null)
             {
                 log.Warn($"Received unhandled packet {packet.Opcode}(0x{packet.Opcode:X}).");
