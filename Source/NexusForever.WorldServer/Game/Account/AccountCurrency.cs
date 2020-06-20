@@ -1,17 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
-using NexusForever.Shared.Database.Auth.Model;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
+using NexusForever.Shared.Network.Message;
 using NexusForever.WorldServer.Game.Account.Static;
-using AccountCurrencyModel = NexusForever.Shared.Database.Auth.Model.AccountCurrency;
 using ServerAccountCurrency = NexusForever.WorldServer.Network.Message.Model.Shared.AccountCurrency;
 
 namespace NexusForever.WorldServer.Game.Account
 {
-    class AccountCurrency
+    public class AccountCurrency : IBuildable<ServerAccountCurrency>
     {
-        public AccountCurrencyType CurrencyId { get; private set; }
-        public AccountCurrencyTypeEntry Entry { get; private set; }
+        public AccountCurrencyType CurrencyId { get; }
+        public AccountCurrencyTypeEntry Entry { get; }
         public ulong Amount { get; private set; }
 
         private readonly uint accountId;
@@ -25,7 +26,7 @@ namespace NexusForever.WorldServer.Game.Account
             accountId   = model.Id;
             CurrencyId  = (AccountCurrencyType)model.CurrencyId;
             Amount      = model.Amount;
-            Entry       = GameTableManager.AccountCurrencyType.GetEntry((ulong)CurrencyId);
+            Entry       = GameTableManager.Instance.AccountCurrencyType.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.None;
         }
@@ -38,7 +39,7 @@ namespace NexusForever.WorldServer.Game.Account
             this.accountId  = accountId;
             CurrencyId      = currencyType;
             Amount          = amount;
-            Entry           = GameTableManager.AccountCurrencyType.GetEntry((ulong)CurrencyId);
+            Entry           = GameTableManager.Instance.AccountCurrencyType.GetEntry((ulong)CurrencyId);
 
             saveMask = AccountCurrencySaveMask.Create;
         }
@@ -95,12 +96,12 @@ namespace NexusForever.WorldServer.Game.Account
             return true;
         }
 
-        public ServerAccountCurrency BuildServerPacket()
+        public ServerAccountCurrency Build()
         {
             return new ServerAccountCurrency
             {
                 AccountCurrencyType = (byte)CurrencyId,
-                Amount = Amount
+                Amount              = Amount
             };
         }
     }

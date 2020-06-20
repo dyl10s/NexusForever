@@ -3,12 +3,14 @@ using NexusForever.WorldServer.Game.Entity;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Game.Prerequisite;
 using NexusForever.WorldServer.Game.Quest.Static;
+using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Model;
 
 namespace NexusForever.WorldServer.Game.Quest
 {
     public class CommunicatorMessage
     {
-        public ushort Id => (ushort)entry.QuestIdDelivered;
+        public ushort QuestId => (ushort)entry.QuestIdDelivered;
 
         private readonly CommunicatorMessagesEntry entry;
 
@@ -55,10 +57,21 @@ namespace NexusForever.WorldServer.Game.Quest
 
             // TODO: reputation
 
-            if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Meets(player, entry.PrerequisiteId))
+            if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Send communicator message to <see cref="WorldSession"/>.
+        /// </summary>
+        public void Send(WorldSession session)
+        {
+            session.EnqueueMessageEncrypted(new ServerCommunicatorMessage
+            {
+                CommunicatorId = (ushort)entry.Id
+            });
         }
     }
 }

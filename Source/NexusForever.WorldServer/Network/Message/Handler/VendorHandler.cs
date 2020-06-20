@@ -1,11 +1,11 @@
 ﻿using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
 using NexusForever.Shared.Network.Message;
-using NexusForever.WorldServer.Database.World.Model;
 using NexusForever.WorldServer.Game.Entity;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Network.Message.Model;
 using System.Collections.Generic;
+using NexusForever.Database.World.Model;
 
 namespace NexusForever.WorldServer.Network.Message.Handler
 {
@@ -35,7 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler
                 Unknown4 = false
             };
 
-            foreach (EntityVendorCategory category in vendorEntity.VendorInfo.Categories)
+            foreach (EntityVendorCategoryModel category in vendorEntity.VendorInfo.Categories)
             {
                 serverVendor.Categories.Add(new ServerVendorItemsUpdated.Category
                 {
@@ -43,7 +43,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler
                     LocalisedTextId = category.LocalisedTextId
                 });
             }
-            foreach (EntityVendorItem item in vendorEntity.VendorInfo.Items)
+            foreach (EntityVendorItemModel item in vendorEntity.VendorInfo.Items)
             {
                 serverVendor.Items.Add(new ServerVendorItemsUpdated.Item
                 {
@@ -68,11 +68,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler
             if (vendorInfo == null)
                 return;
 
-            EntityVendorItem vendorItem = vendorInfo.GetItemAtIndex(vendorPurchase.VendorIndex);
+            EntityVendorItemModel vendorItem = vendorInfo.GetItemAtIndex(vendorPurchase.VendorIndex);
             if (vendorItem == null)
                 return;
 
-            Item2Entry itemEntry = GameTableManager.Item.GetEntry(vendorItem.ItemId);
+            Item2Entry itemEntry = GameTableManager.Instance.Item.GetEntry(vendorItem.ItemId);
             float costMultiplier = vendorInfo.BuyPriceMultiplier * vendorPurchase.VendorItemQty;
 
             // do all sanity checks before modifying currency
@@ -128,13 +128,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler
 
             // TODO Figure out why this is showing "You deleted [item]"
             Item soldItem = session.Player.Inventory.ItemDelete(vendorSell.ItemLocation);
-            BuybackManager.AddItem(session.Player, soldItem, vendorSell.Quantity, currencyChange);
+            BuybackManager.Instance.AddItem(session.Player, soldItem, vendorSell.Quantity, currencyChange);
         }
 
         [MessageHandler(GameMessageOpcode.ClientBuybackItemFromVendor)]
         public static void HandleBuybackItemFromVendor(WorldSession session, ClientBuybackItemFromVendor buybackItemFromVendor)
         {
-            BuybackItem buybackItem = BuybackManager.GetItem(session.Player, buybackItemFromVendor.UniqueId);
+            BuybackItem buybackItem = BuybackManager.Instance.GetItem(session.Player, buybackItemFromVendor.UniqueId);
             if (buybackItem == null)
                 return;
 
@@ -149,7 +149,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler
                 session.Player.CurrencyManager.CurrencySubtractAmount(currencyTypeId, currencyAmount);
 
             session.Player.Inventory.AddItem(buybackItem.Item, InventoryLocation.Inventory);
-            BuybackManager.RemoveItem(session.Player, buybackItem);
+            BuybackManager.Instance.RemoveItem(session.Player, buybackItem);
         }
     }
 }

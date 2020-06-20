@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
-using NexusForever.WorldServer.Database;
-using NexusForever.WorldServer.Database.Character.Model;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Network.Message.Model;
 
@@ -16,13 +16,13 @@ namespace NexusForever.WorldServer.Game.Entity
         private readonly Dictionary<CurrencyType, Currency> currencies = new Dictionary<CurrencyType, Currency>();
 
         /// <summary>
-        /// Create a new <see cref="CurrencyManager"/> from <see cref="Player"/> database model.
+        /// Create a new <see cref="CurrencyManager"/> from <see cref="CharacterModel"/> database model.
         /// </summary>
-        public CurrencyManager(Player owner, Character model)
+        public CurrencyManager(Player owner, CharacterModel model)
         {
             player = owner;
 
-            foreach (CharacterCurrency currencyModel in model.CharacterCurrency)
+            foreach (CharacterCurrencyModel currencyModel in model.Currency)
             {
                 var currency = new Currency(currencyModel);
                 currencies.Add(currency.Id, currency);
@@ -58,7 +58,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public void CurrencyAddAmount(CurrencyType currencyId, ulong amount, bool isLoot = false)
         {
-            CurrencyTypeEntry currencyEntry = GameTableManager.CurrencyType.GetEntry((ulong)currencyId);
+            CurrencyTypeEntry currencyEntry = GameTableManager.Instance.CurrencyType.GetEntry((ulong)currencyId);
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 
@@ -75,7 +75,7 @@ namespace NexusForever.WorldServer.Game.Entity
 
             amount += currency.Amount;
             if (currency.Entry.CapAmount > 0)
-                amount = Math.Min(amount + currency.Amount, currency.Entry.CapAmount);
+                amount = Math.Min(amount, currency.Entry.CapAmount);
 
             CurrencyAmountUpdate(currency, amount, isLoot);
         }
@@ -98,7 +98,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public void CurrencySubtractAmount(CurrencyType currencyId, ulong amount, bool isLoot = false)
         {
-            CurrencyTypeEntry currencyEntry = GameTableManager.CurrencyType.GetEntry((ulong)currencyId);
+            CurrencyTypeEntry currencyEntry = GameTableManager.Instance.CurrencyType.GetEntry((ulong)currencyId);
             if (currencyEntry == null)
                 throw new ArgumentNullException();
 

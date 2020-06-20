@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
-using NexusForever.WorldServer.Database;
-using NexusForever.WorldServer.Database.Character.Model;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Network.Message.Model.Shared;
-using ItemModel = NexusForever.WorldServer.Database.Character.Model.Item;
 using NetworkItem = NexusForever.WorldServer.Network.Message.Model.Shared.Item;
 
 namespace NexusForever.WorldServer.Game.Entity
@@ -27,7 +26,7 @@ namespace NexusForever.WorldServer.Game.Entity
             if (entry.ItemSourceId == 0u)
                 return (ushort)entry.ItemDisplayId;
 
-            List<ItemDisplaySourceEntryEntry> entries = AssetManager.GetItemDisplaySource(entry.ItemSourceId)
+            List<ItemDisplaySourceEntryEntry> entries = AssetManager.Instance.GetItemDisplaySource(entry.ItemSourceId)
                 .Where(e => e.Item2TypeId == entry.Item2TypeId)
                 .ToList();
 
@@ -38,7 +37,7 @@ namespace NexusForever.WorldServer.Game.Entity
                 if (entry.ItemDisplayId > 0)
                     return (ushort)entry.ItemDisplayId; // This is what the preview window shows for "Frozen Wrangler Mitts" (Item2Id: 28366).
 
-                ItemDisplaySourceEntryEntry fallbackVisual = entries.FirstOrDefault(e => e.ItemMaxLevel == entry.PowerLevel);
+                ItemDisplaySourceEntryEntry fallbackVisual = entries.FirstOrDefault(e => entry.PowerLevel >= e.ItemMinLevel && entry.PowerLevel <= e.ItemMaxLevel);
                 if (fallbackVisual != null)
                     return (ushort)fallbackVisual.ItemDisplayId;
             }
@@ -171,9 +170,9 @@ namespace NexusForever.WorldServer.Game.Entity
             durability  = model.Durability;
 
             if ((InventoryLocation)model.Location != InventoryLocation.Ability)
-                Entry       = GameTableManager.Item.GetEntry(model.ItemId);
+                Entry       = GameTableManager.Instance.Item.GetEntry(model.ItemId);
             else
-                SpellEntry  = GameTableManager.Spell4Base.GetEntry(model.ItemId);
+                SpellEntry  = GameTableManager.Instance.Spell4Base.GetEntry(model.ItemId);
             saveMask    = ItemSaveMask.None;
         }
 
@@ -182,7 +181,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public Item(ulong? owner, Item2Entry entry, uint count = 1u, uint initialCharges = 0)
         {
-            Guid        = AssetManager.NextItemId;
+            Guid        = AssetManager.Instance.NextItemId;
             characterId = owner;
             location    = InventoryLocation.None;
             bagIndex    = 0u;
@@ -199,7 +198,7 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public Item(ulong owner, Spell4BaseEntry entry, uint count = 1u)
         {
-            Guid        = AssetManager.NextItemId;
+            Guid        = AssetManager.Instance.NextItemId;
             characterId = owner;
             location    = InventoryLocation.None;
             bagIndex    = 0u;
@@ -352,7 +351,7 @@ namespace NexusForever.WorldServer.Game.Entity
         private uint CalculateVendorSellAmount()
         {
             // TODO: Rawaho was lazy and didn't finish this
-            // GameFormulaEntry entry = GameTableManager.GameFormula.GetEntry(559);
+            // GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(559);
             // uint cost = Entry.PowerLevel * entry.Dataint01;
             return 0u;
         }

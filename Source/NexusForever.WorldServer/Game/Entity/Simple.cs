@@ -1,9 +1,9 @@
+using NexusForever.Database.World.Model;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
 using NexusForever.WorldServer.Game.Entity.Network;
 using NexusForever.WorldServer.Game.Entity.Network.Model;
 using NexusForever.WorldServer.Game.Entity.Static;
-using EntityModel = NexusForever.WorldServer.Database.World.Model.Entity;
 
 namespace NexusForever.WorldServer.Game.Entity
 {
@@ -34,7 +34,7 @@ namespace NexusForever.WorldServer.Game.Entity
 
         public override void OnActivate(Player activator)
         {
-            Creature2Entry entry = GameTableManager.Creature2.GetEntry(CreatureId);
+            Creature2Entry entry = GameTableManager.Instance.Creature2.GetEntry(CreatureId);
             if (entry.DatacubeId != 0u)
                 activator.DatacubeManager.AddDatacube((ushort)entry.DatacubeId, int.MaxValue);
         }
@@ -43,7 +43,7 @@ namespace NexusForever.WorldServer.Game.Entity
         {
             uint progress = (uint)(1 << QuestChecklistIdx);
 
-            Creature2Entry entry = GameTableManager.Creature2.GetEntry(CreatureId);
+            Creature2Entry entry = GameTableManager.Instance.Creature2.GetEntry(CreatureId);
             if (entry.DatacubeId != 0u)
             {
                 Datacube datacube = activator.DatacubeManager.GetDatacube((ushort)entry.DatacubeId, DatacubeType.Datacube);
